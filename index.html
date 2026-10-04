@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Para ti</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #000000;
+    font-family: monospace, Courier, "Courier New";
+    user-select: none;
+  }
+  canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .btn-nav {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 10;
+    background: #000000;
+    color: #63ff7b;
+    border: 1px solid #00ff41;
+    padding: 10px 16px;
+    font-family: monospace;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .btn-nav:active {
+    background: #00ff41;
+    color: #000;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="matrix"></canvas>
+<button id="btnAnt" class="btn-nav">← Anterior</button>
+
+<script>
+const canvas = document.getElementById("matrix");
+const ctx = canvas.getContext("2d");
+const btnAnt = document.getElementById("btnAnt");
+
+let W = 0, H = 0;
+
+/* TU ORACIÓN EXACTA REPARTIDA EN LAS 12 PÁGINAS SOLICITADAS */
+const paginas = [
+  "Hola,",
+  "espero no ser muy intenso, jaja.",
+  "Esto lo hago porque quiero que entiendas algo: no quiero ser uno más en tu vida. No quiero ser ese tipo de hombre que llegue a tu vida para hacerte daño, dejarte heridas o convertirse en un mal recuerdo.",
+  "Quiero ser ese hombre que pueda hacerte reír incluso en tus días malos; el que esté ahí cuando todo se vuelva intenso, cuando estés cansada, enojada o simplemente necesites desahogarte.",
+  "Quiero ser tu paño de lágrimas, tu costal de box cuando haga falta, pero también esa persona a la que puedas buscar cuando necesites sentir que no estás sola.",
+  "No prometo tener siempre las palabras correctas, ni saber cómo solucionar todo. Pero sí puedo prometerte que, si algún día decides dejarme formar parte de tu mundo, voy a intentar conocerlo, entenderlo y encontrar mi lugar en él.",
+  "Porque quizá mi mundo no sea perfecto, ni tenga los mismos colores que el tuyo… pero hay algo que todavía no te he contado.",
+  "A pesar que no conectamos en el pasado o bien no te haya dejado alguna señal de que estoy enamorado profundamente de ti es por que me daba temor de hacer algo mal y estropear todo o bien la amistad que tenemos o tuvimos",
+  "Sé que me veo muy intenso con todo esto pero observa lo que hago para que tú me aceptes sé que no soy la persona que en realidad deseas pero no quiero y no te aré pasar ratos malos y si sucede aré lo posible o imposible para solucionar los errores cometidos",
+  "Me gustas y siempre me gustarás Zabdy y maldigo el día en que no te pude decir lo que sentía por ti para que hoy me creas esto; Te amo siempre amaré tu forma de ser tu cambios de humor, tu locuras y sobre todo entregarte toda mi atención",
+  "Claro todos cambia asta yo y no quiero ser muy pero muy abierto a si a mis sentimientos ya hoy en día eso se ve mal pero estoy muy roto y me da demasiado miedo que juegues o me tengas como segunda opción a pesar que no te conozco al 1000% creo en ti y expongo mis sentimientos sin censura por confío en ti solo no me dañes yo no lo aria jamás en la vida que me queda",
+  "Yo no pienso en hacerte daño…"
+];
+
+let paginaIndex = 0;
+const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*+-<>";
+let gotas = [];
+let letras = [];
+let animId = null;
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  
+  const fontSize = W < 500 ? 15 : 18;
+  
+  const step = fontSize * 0.6;
+  const cols = Math.floor(W / step);
+  gotas = [];
+  
+  for (let i = 0; i < cols; i++) {
+    gotas.push({
+      x: i * step,
+      y: Math.random() * -H,
+      speed: 0.6 + Math.random() * 0.8,
+      len: 10 + Math.floor(Math.random() * 10)
+    });
+  }
+  cargarPagina();
+}
+
+function cargarPagina() {
+  letras = [];
+  const fontSize = W < 500 ? 15 : 18;
+  const maxW = Math.min(W * 0.85, 650);
+  ctx.font = "bold " + fontSize + "px monospace";
+  
+  const parrafos = paginas[paginaIndex].split("\n");
+  const lineas = [];
+  parrafos.forEach(p => {
+    if (p === "") { lineas.push(""); return; }
+    const palabras = p.split(" ");
+    let cur = "";
+    palabras.forEach(pal => {
+      const test = cur === "" ? pal : cur + " " + pal;
+      if (ctx.measureText(test).width > maxW) { lineas.push(cur); cur = pal; } else { cur = test; }
+    });
+    if (cur !== "") lineas.push(cur);
+  });
+
+  const lineHeight = fontSize * 1.5;
+  const totalH = lineas.length * lineHeight;
+  const startY = (H - totalH) / 2 + fontSize;
+
+  lineas.forEach((linea, lIdx) => {
+    if (!linea) return;
+    let posX = (W - ctx.measureText(linea).width) / 2;
+    for (let i = 0; i < linea.length; i++) {
+      const c = linea[i];
+      if (c !== " ") {
+        letras.push({ c: c, x: posX, y: startY + lIdx * lineHeight, creada: false });
+      }
+      posX += ctx.measureText(c).width;
+    }
+  });
+}
+
+function render() {
+  ctx.fillStyle = "#000000";
+  ctx.fillRect(0, 0, W, H);
+
+  const fontSize = W < 500 ? 15 : 18;
+  ctx.font = fontSize + "px monospace";
+
+  // Lluvia Matrix densa y lenta
+  gotas.forEach(g => {
+    for (let i = 0; i < g.len; i++) {
+      const py = g.y - i * fontSize;
+      if (py < 0 || py > H) continue;
+
+      ctx.fillStyle = i === 0 ? "#ffffff" : (i < 3 ? "#00ff41" : "#005515");
+      ctx.fillText(chars[Math.floor(Math.random() * chars.length)], g.x, py);
+
+      // Revelado de las letras conforme la lluvia pasa
+      for (let j = 0; j < letras.length; j++) {
+        const l = letras[j];
+        if (!l.creada && Math.abs(g.x - l.x) < fontSize * 1.2 && py >= l.y - fontSize && py <= l.y + fontSize) {
+          l.creada = true;
+        }
+      }
+    }
+
+    g.y += g.speed;
+    if (g.y - g.len * fontSize > H) {
+      g.y = -Math.random() * 200;
+    }
+  });
+
+  // Texto verde revelado por la lluvia
+  ctx.font = "bold " + fontSize + "px monospace";
+  ctx.fillStyle = "#63ff7b";
+  for (let i = 0; i < letras.length; i++) {
+    const l = letras[i];
+    if (l.creada) {
+      ctx.fillText(l.c, l.x, l.y);
+    }
+  }
+
+  animId = requestAnimationFrame(render);
+}
+
+window.addEventListener("resize", resize);
+
+canvas.addEventListener("click", () => {
+  paginaIndex = (paginaIndex + 1) % paginas.length;
+  cargarPagina();
+});
+
+btnAnt.addEventListener("click", (e) => {
+  e.stopPropagation();
+  paginaIndex = (paginaIndex - 1 + paginas.length) % paginas.length;
+  cargarPagina();
+});
+
+resize();
+if (animId) cancelAnimationFrame(animId);
+render();
+</script>
+</body>
+</html>
